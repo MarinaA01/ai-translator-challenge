@@ -1,37 +1,39 @@
-const express = require('express');
-const axios = require('axios');
-const { async } = require('rxjs');
+const { OpenAI } = require('langchain/llms/openai');
+const inquirer = require('inquirer');
 require('dotenv').config();
 
-const app = express();
-const port = 3001;
+const model = new OpenAI({ 
+        openAIApiKey: process.env.OPENAI_API_KEY, 
+        temperature: 0,
+        model: 'gpt-3.5-turbo'
+    });
+    
+    console.log({ model });
 
-app.get('/translate', async (req, res) => {
-    const { text, targetLanguage } = req.query;
-    const apiKey = process.env.OPENAI_API_KEY;
+  const promptFunc = async (input) => {
     try {
-        const response = await axios.post('https://api.openai.com/v1/engines/davinci-codex/completions', {
-            prompt: `Translate the following English text to ${targetLanguage}: ${text}`,
-            max_tokens: 100,
-            temperature: 0.7,
-            top_p: 1,
-            frequency_penalty: 0,
-            presence_penalty: 0
-        }, {
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const translation = response.data.choices[0].text.trim();
-        res.send(translation);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Translation failed');
+        const res = await model.call(input);
+        console.log(res);
     }
-});
+    catch (err) {
+      console.error(err);
+    }
+  };
 
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-})
+  const init = () => {
+    const textToTranslate = "Hello, how are you?";
+    const sourceLanguage = "en";
+    const targetLanguage = "fr"; // Translate to French
+
+    promptFunc(textToTranslate, sourceLanguage, targetLanguage)
+        .then(translatedText => {
+            console.log("Translated text:", textToTranslate);
+    })
+
+    .catch(error => {
+        console.error("Translation failed:", error);
+    });
+  };
+  
+  init();
+
